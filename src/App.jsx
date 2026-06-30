@@ -1,47 +1,48 @@
 import { useState } from "react";
-import InputForm from "./components/InputForm";
-import Results from "./components/Results";
-import "./styles.css";
 
 export default function App() {
-  const [data, setData] = useState(null);
+  const [income, setIncome] = useState("");
+  const [cost, setCost] = useState("");
+  const [result, setResult] = useState(null);
 
-  const calculate = (inputs) => {
-    const savings = Number(inputs.savings);
-    const income = Number(inputs.income);
-    const expenses = Number(inputs.expenses);
-    const cost = Number(inputs.cost);
-    const months = Number(inputs.months);
+  const calculate = () => {
+    const i = Number(income);
+    const c = Number(cost);
 
-    const net = income - expenses;
-    const runway = net < 0 ? savings / Math.abs(net) : 999;
+    if (!i || !c) {
+      setResult("Enter valid numbers");
+      return;
+    }
 
-    const totalAffordability =
-      savings + net * months >= cost;
+    const remaining = i - c;
+    const percent = ((remaining / i) * 100).toFixed(1);
 
-    let score =
-      Math.max(0, Math.min(100,
-        (savings / (cost + 1)) * 50 +
-        (net > 0 ? 30 : 10) +
-        (totalAffordability ? 30 : 0)
-      ));
-
-    setData({
-      net,
-      runway,
-      totalAffordability,
-      score: score.toFixed(1),
-    });
+    setResult(`You have $${remaining} left (${percent}% remaining)`);
   };
 
   return (
-    <div className="container">
+    <div style={{ padding: 20, fontFamily: "Arial" }}>
       <h1>CareerCash</h1>
-      {!data ? (
-        <InputForm onSubmit={calculate} />
-      ) : (
-        <Results data={data} reset={() => setData(null)} />
-      )}
+
+      <input
+        placeholder="Monthly income"
+        value={income}
+        onChange={(e) => setIncome(e.target.value)}
+      />
+
+      <br /><br />
+
+      <input
+        placeholder="Career cost / expenses"
+        value={cost}
+        onChange={(e) => setCost(e.target.value)}
+      />
+
+      <br /><br />
+
+      <button onClick={calculate}>Calculate</button>
+
+      <h2>{result}</h2>
     </div>
   );
 }
