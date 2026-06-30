@@ -2,67 +2,101 @@ import { useState } from "react";
 
 export default function App() {
   const [income, setIncome] = useState("");
-  const [cost, setCost] = useState("");
+  const [expenses, setExpenses] = useState("");
+  const [savings, setSavings] = useState("");
   const [result, setResult] = useState(null);
 
   const calculate = () => {
     const i = Number(income);
-    const c = Number(cost);
+    const e = Number(expenses);
+    const s = Number(savings || 0);
 
-    if (!i || !c) return;
+    if (!i || !e) return;
 
-    const remaining = i - c;
-    const score = Math.max(0, Math.min(100, ((remaining / i) * 100).toFixed(0)));
+    const surplus = i - e;
 
-    let status = "Stable";
-    if (score >= 70) status = "Strong Fit";
-    else if (score >= 40) status = "Moderate Risk";
-    else status = "High Risk";
+    const score = Math.max(
+      0,
+      Math.min(100, Math.round((surplus / i) * 100 + 50))
+    );
 
-    const runwayMonths = remaining > 0 ? Math.floor(remaining / (c || 1)) : 0;
+    let rating = "Moderate Risk";
 
-    setResult({ remaining, score, status, runwayMonths });
+    if (score >= 75) {
+      rating = "Strong";
+    } else if (score < 40) {
+      rating = "High Risk";
+    }
+
+    const cushion =
+      surplus < 0
+        ? Math.floor(s / Math.abs(surplus))
+        : "Unlimited";
+
+    setResult({
+      score,
+      surplus,
+      rating,
+      cushion,
+    });
   };
 
   return (
     <div style={styles.app}>
       {/* Sidebar */}
       <div style={styles.sidebar}>
-        <h2 style={styles.logo}>CareerCash</h2>
+        <h1 style={styles.logo}>CareerCash</h1>
+
         <p style={styles.tagline}>
-          Career affordability intelligence for early-stage professionals
+          Financial readiness insights for career decisions.
         </p>
 
-        <div style={styles.smallBox}>
-          <p style={styles.smallText}>Investor Snapshot</p>
-          <p style={styles.smallValue}>AI-powered financial readiness scoring</p>
+        <div style={styles.sidebarCard}>
+          <h3>About</h3>
+          <p>
+            CareerCash helps users evaluate whether a career path is
+            financially sustainable based on income, expenses, and savings.
+          </p>
         </div>
       </div>
 
-      {/* Main */}
+      {/* Main Content */}
       <div style={styles.main}>
         <h1 style={styles.title}>Career Financial Dashboard</h1>
+
         <p style={styles.subtitle}>
-          Evaluate whether you can realistically afford a career path before committing.
+          Understand your financial readiness before committing to a career path.
         </p>
 
-        {/* Input Card */}
+        {/* Inputs */}
         <div style={styles.card}>
-          <h3>Input Parameters</h3>
+          <h2>Input Parameters</h2>
 
-          <input
-            style={styles.input}
-            placeholder="Monthly income ($)"
-            value={income}
-            onChange={(e) => setIncome(e.target.value)}
-          />
+          <div style={styles.inputRow}>
+            <input
+              style={styles.input}
+              type="number"
+              placeholder="Monthly Income ($)"
+              value={income}
+              onChange={(e) => setIncome(e.target.value)}
+            />
 
-          <input
-            style={styles.input}
-            placeholder="Monthly career cost ($)"
-            value={cost}
-            onChange={(e) => setCost(e.target.value)}
-          />
+            <input
+              style={styles.input}
+              type="number"
+              placeholder="Expenses ($)"
+              value={expenses}
+              onChange={(e) => setExpenses(e.target.value)}
+            />
+
+            <input
+              style={styles.input}
+              type="number"
+              placeholder="Savings ($)"
+              value={savings}
+              onChange={(e) => setSavings(e.target.value)}
+            />
+          </div>
 
           <button style={styles.button} onClick={calculate}>
             Generate CareerCash Score
@@ -71,30 +105,78 @@ export default function App() {
 
         {/* Results */}
         {result && (
-          <div style={styles.grid}>
-            <div style={styles.metricCard}>
-              <h4>CareerCash Score</h4>
-              <p style={styles.big}>{result.score}/100</p>
+          <>
+            <div style={styles.grid}>
+              <div style={styles.metricCard}>
+                <div style={styles.metricTitle}>
+                  CareerCash Score
+                </div>
+
+                <div style={styles.metricValue}>
+                  {result.score}/100
+                </div>
+
+                <div style={styles.metricDescription}>
+                  Financial readiness score
+                </div>
+              </div>
+
+              <div style={styles.metricCard}>
+                <div style={styles.metricTitle}>
+                  Monthly Surplus / Deficit
+                </div>
+
+                <div style={styles.metricValue}>
+                  ${result.surplus}
+                </div>
+
+                <div style={styles.metricDescription}>
+                  Income minus expenses
+                </div>
+              </div>
+
+              <div style={styles.metricCard}>
+                <div style={styles.metricTitle}>
+                  Affordability Rating
+                </div>
+
+                <div style={styles.metricValue}>
+                  {result.rating}
+                </div>
+
+                <div style={styles.metricDescription}>
+                  Strong / Moderate Risk / High Risk
+                </div>
+              </div>
+
+              <div style={styles.metricCard}>
+                <div style={styles.metricTitle}>
+                  Months of Financial Cushion
+                </div>
+
+                <div style={styles.metricValue}>
+                  {result.cushion}
+                </div>
+
+                <div style={styles.metricDescription}>
+                  Based on savings entered
+                </div>
+              </div>
             </div>
 
-            <div style={styles.metricCard}>
-              <h4>Financial Status</h4>
-              <p style={styles.big}>{result.status}</p>
-            </div>
+            <div style={styles.insightCard}>
+              <h2>CareerCash Insight</h2>
 
-            <div style={styles.metricCard}>
-              <h4>Runway Estimate</h4>
-              <p style={styles.big}>{result.runwayMonths} months</p>
-            </div>
-
-            <div style={styles.metricCardWide}>
-              <h4>Investor Insight</h4>
               <p>
-                This user has a <b>{result.score}% financial readiness score</b> for
-                sustaining this career path based on current income and cost structure.
+                Your current financial profile produces a CareerCash
+                Score of <strong>{result.score}/100</strong>.
+                Your monthly surplus/deficit is{" "}
+                <strong>${result.surplus}</strong> and your
+                affordability rating is{" "}
+                <strong>{result.rating}</strong>.
               </p>
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>
@@ -104,47 +186,36 @@ export default function App() {
 const styles = {
   app: {
     display: "flex",
-    height: "100vh",
-    fontFamily: "Arial",
-    background: "#0b1220",
-    color: "white",
+    minHeight: "100vh",
+    background: "#F8F2EA",
+    fontFamily: "Arial, sans-serif",
+    color: "#6B2D3A",
   },
 
   sidebar: {
     width: "280px",
+    background: "#FFF7F7",
     padding: "24px",
-    background: "#0a0f1c",
-    borderRight: "1px solid rgba(255,255,255,0.05)",
+    borderRight: "2px solid #F7D7DD",
   },
 
   logo: {
-    fontSize: "22px",
-    background: "linear-gradient(90deg,#3b82f6,#8b5cf6)",
-    WebkitBackgroundClip: "text",
-    WebkitTextFillColor: "transparent",
+    fontSize: "36px",
+    fontWeight: "bold",
+    color: "#B03052",
+    marginBottom: "12px",
   },
 
   tagline: {
-    fontSize: "12px",
-    color: "#9ca3af",
-    marginTop: "10px",
+    color: "#7A5B5B",
+    marginBottom: "24px",
   },
 
-  smallBox: {
-    marginTop: "20px",
-    padding: "12px",
-    background: "rgba(255,255,255,0.04)",
-    borderRadius: "10px",
-  },
-
-  smallText: {
-    fontSize: "11px",
-    color: "#9ca3af",
-  },
-
-  smallValue: {
-    fontSize: "12px",
-    marginTop: "5px",
+  sidebarCard: {
+    background: "#FFFDFB",
+    padding: "18px",
+    borderRadius: "18px",
+    border: "2px solid #F6E2C3",
   },
 
   main: {
@@ -153,63 +224,87 @@ const styles = {
   },
 
   title: {
-    fontSize: "28px",
-    marginBottom: "6px",
+    fontSize: "42px",
+    marginBottom: "8px",
+    color: "#5A2A2A",
   },
 
   subtitle: {
-    color: "#9ca3af",
-    marginBottom: "20px",
+    color: "#8A6E6E",
+    marginBottom: "24px",
   },
 
   card: {
-    background: "rgba(255,255,255,0.04)",
-    padding: "20px",
-    borderRadius: "14px",
-    marginBottom: "20px",
+    background: "#FFFDFB",
+    borderRadius: "24px",
+    padding: "24px",
+    border: "2px solid #F6E2C3",
+    marginBottom: "24px",
+  },
+
+  inputRow: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 1fr)",
+    gap: "16px",
+    marginTop: "16px",
   },
 
   input: {
-    width: "100%",
-    padding: "12px",
-    margin: "10px 0",
-    borderRadius: "10px",
-    border: "1px solid rgba(255,255,255,0.1)",
-    background: "#0a0f1c",
-    color: "white",
+    padding: "16px",
+    borderRadius: "14px",
+    border: "2px solid #F7D7DD",
+    fontSize: "16px",
   },
 
   button: {
-    padding: "12px 16px",
-    background: "linear-gradient(90deg,#3b82f6,#6366f1)",
+    marginTop: "20px",
+    padding: "14px 24px",
+    borderRadius: "14px",
     border: "none",
-    color: "white",
-    borderRadius: "10px",
-    cursor: "pointer",
+    background: "#FFD54F",
+    color: "#5A3A00",
     fontWeight: "bold",
+    cursor: "pointer",
+    fontSize: "16px",
   },
 
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
-    gap: "14px",
+    gridTemplateColumns: "repeat(4, 1fr)",
+    gap: "18px",
   },
 
   metricCard: {
-    background: "rgba(255,255,255,0.04)",
-    padding: "16px",
-    borderRadius: "12px",
+    background: "#FFFDFB",
+    borderRadius: "20px",
+    padding: "24px",
+    border: "2px solid #F6E2C3",
+    textAlign: "center",
   },
 
-  metricCardWide: {
-    gridColumn: "span 3",
-    background: "rgba(255,255,255,0.04)",
-    padding: "16px",
-    borderRadius: "12px",
+  metricTitle: {
+    fontSize: "18px",
+    color: "#A33A5E",
+    marginBottom: "10px",
   },
 
-  big: {
-    fontSize: "22px",
-    marginTop: "8px",
+  metricValue: {
+    fontSize: "32px",
+    fontWeight: "bold",
+    color: "#B03052",
+  },
+
+  metricDescription: {
+    marginTop: "10px",
+    color: "#7A6A6A",
+    fontSize: "14px",
+  },
+
+  insightCard: {
+    marginTop: "24px",
+    background: "#FFF7F8",
+    borderRadius: "20px",
+    padding: "24px",
+    border: "2px solid #F7D7DD",
   },
 };
