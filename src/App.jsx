@@ -7,18 +7,32 @@ export default function App() {
   const [result, setResult] = useState(null);
 
   const calculate = () => {
-    const i = Number(income);
-    const e = Number(expenses);
-    const s = Number(savings || 0);
+    const annualIncome = Number(income) || 0;
+    const monthlyExpenses = Number(expenses) || 0;
+    const savingsAmount = Number(savings) || 0;
 
-    if (!i || !e) return;
+    const monthlyIncome = annualIncome / 12;
+    const moneyLeft = monthlyIncome - monthlyExpenses;
 
-    const surplus = i - e;
+    let score = 50;
 
-    const score = Math.max(
-      0,
-      Math.min(100, Math.round((surplus / i) * 100 + 50))
-    );
+    if (monthlyIncome > 0) {
+      score = Math.round(
+        Math.max(
+          0,
+          Math.min(
+            100,
+            ((moneyLeft / monthlyIncome) * 50) + 50
+          )
+        )
+      );
+    } else if (monthlyExpenses === 0) {
+      score = 100;
+    } else if (savingsAmount > 0) {
+      score = 25;
+    } else {
+      score = 0;
+    }
 
     let rating = "Moderate Risk";
 
@@ -28,22 +42,28 @@ export default function App() {
       rating = "High Risk";
     }
 
-    const cushion =
-      surplus < 0
-        ? Math.floor(s / Math.abs(surplus))
-        : "Unlimited";
+    let duration;
+
+    if (monthlyExpenses === 0) {
+      duration = "Unlimited";
+    } else if (moneyLeft < 0) {
+      duration = `${Math.floor(
+        savingsAmount / Math.abs(moneyLeft)
+      )} month(s)`;
+    } else {
+      duration = "Unlimited";
+    }
 
     setResult({
       score,
-      surplus,
+      moneyLeft: moneyLeft.toFixed(0),
       rating,
-      cushion,
+      duration,
     });
   };
 
   return (
     <div style={styles.app}>
-      {/* Sidebar */}
       <div style={styles.sidebar}>
         <h1 style={styles.logo}>CareerCash</h1>
 
@@ -52,23 +72,26 @@ export default function App() {
         </p>
 
         <div style={styles.sidebarCard}>
-          <h3>About</h3>
+          <h3>About CareerCash</h3>
+
           <p>
-            CareerCash helps users evaluate whether a career path is
-            financially sustainable based on income, expenses, and savings.
+            CareerCash helps people understand whether
+            their income, expenses, and savings support
+            their career goals.
           </p>
         </div>
       </div>
 
-      {/* Main Content */}
       <div style={styles.main}>
-        <h1 style={styles.title}>Career Financial Dashboard</h1>
+        <h1 style={styles.title}>
+          Career Financial Dashboard
+        </h1>
 
         <p style={styles.subtitle}>
-          Understand your financial readiness before committing to a career path.
+          Understand your financial readiness before
+          committing to a career path.
         </p>
 
-        {/* Inputs */}
         <div style={styles.card}>
           <h2>Input Parameters</h2>
 
@@ -76,7 +99,8 @@ export default function App() {
             <input
               style={styles.input}
               type="number"
-              placeholder="Monthly Income ($)"
+              min="0"
+              placeholder="Annual Income ($)"
               value={income}
               onChange={(e) => setIncome(e.target.value)}
             />
@@ -84,7 +108,8 @@ export default function App() {
             <input
               style={styles.input}
               type="number"
-              placeholder="Expenses ($)"
+              min="0"
+              placeholder="Expenses Per Month ($)"
               value={expenses}
               onChange={(e) => setExpenses(e.target.value)}
             />
@@ -92,18 +117,21 @@ export default function App() {
             <input
               style={styles.input}
               type="number"
+              min="0"
               placeholder="Savings ($)"
               value={savings}
               onChange={(e) => setSavings(e.target.value)}
             />
           </div>
 
-          <button style={styles.button} onClick={calculate}>
+          <button
+            style={styles.button}
+            onClick={calculate}
+          >
             Generate CareerCash Score
           </button>
         </div>
 
-        {/* Results */}
         {result && (
           <>
             <div style={styles.grid}>
@@ -115,23 +143,15 @@ export default function App() {
                 <div style={styles.metricValue}>
                   {result.score}/100
                 </div>
-
-                <div style={styles.metricDescription}>
-                  Financial readiness score
-                </div>
               </div>
 
               <div style={styles.metricCard}>
                 <div style={styles.metricTitle}>
-                  Monthly Surplus / Deficit
+                  Money Left Over Each Month
                 </div>
 
                 <div style={styles.metricValue}>
-                  ${result.surplus}
-                </div>
-
-                <div style={styles.metricDescription}>
-                  Income minus expenses
+                  ${result.moneyLeft}
                 </div>
               </div>
 
@@ -143,23 +163,15 @@ export default function App() {
                 <div style={styles.metricValue}>
                   {result.rating}
                 </div>
-
-                <div style={styles.metricDescription}>
-                  Strong / Moderate Risk / High Risk
-                </div>
               </div>
 
               <div style={styles.metricCard}>
                 <div style={styles.metricTitle}>
-                  Months of Financial Cushion
+                  How Long Money Left Over Might Last
                 </div>
 
                 <div style={styles.metricValue}>
-                  {result.cushion}
-                </div>
-
-                <div style={styles.metricDescription}>
-                  Based on savings entered
+                  {result.duration}
                 </div>
               </div>
             </div>
@@ -168,12 +180,50 @@ export default function App() {
               <h2>CareerCash Insight</h2>
 
               <p>
-                Your current financial profile produces a CareerCash
-                Score of <strong>{result.score}/100</strong>.
-                Your monthly surplus/deficit is{" "}
-                <strong>${result.surplus}</strong> and your
-                affordability rating is{" "}
+                Your CareerCash Score is{" "}
+                <strong>{result.score}/100</strong>.
+                Based on your income, expenses,
+                and savings, your affordability
+                rating is{" "}
                 <strong>{result.rating}</strong>.
+              </p>
+            </div>
+
+            <div style={styles.footnoteCard}>
+              <h3>
+                How Affordability Rating Is Calculated
+              </h3>
+
+              <p>
+                The CareerCash Score ranges from
+                0–100 and compares annual income,
+                monthly expenses, and available
+                savings.
+              </p>
+
+              <ul>
+                <li>
+                  <strong>Strong</strong>:
+                  Score 75–100
+                </li>
+
+                <li>
+                  <strong>Moderate Risk</strong>:
+                  Score 40–74
+                </li>
+
+                <li>
+                  <strong>High Risk</strong>:
+                  Score below 40
+                </li>
+              </ul>
+
+              <p>
+                Higher scores generally indicate
+                that income covers expenses more
+                comfortably. Savings can help
+                extend financial stability when
+                expenses exceed income.
               </p>
             </div>
           </>
@@ -225,8 +275,8 @@ const styles = {
 
   title: {
     fontSize: "42px",
-    marginBottom: "8px",
     color: "#5A2A2A",
+    marginBottom: "8px",
   },
 
   subtitle: {
@@ -289,15 +339,9 @@ const styles = {
   },
 
   metricValue: {
-    fontSize: "32px",
+    fontSize: "28px",
     fontWeight: "bold",
     color: "#B03052",
-  },
-
-  metricDescription: {
-    marginTop: "10px",
-    color: "#7A6A6A",
-    fontSize: "14px",
   },
 
   insightCard: {
@@ -306,5 +350,13 @@ const styles = {
     borderRadius: "20px",
     padding: "24px",
     border: "2px solid #F7D7DD",
+  },
+
+  footnoteCard: {
+    marginTop: "24px",
+    background: "#FFFDFB",
+    borderRadius: "20px",
+    padding: "24px",
+    border: "2px solid #F6E2C3",
   },
 };
