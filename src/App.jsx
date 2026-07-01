@@ -2,9 +2,13 @@ import { useState } from "react";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loginError, setLoginError] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authSuccess, setAuthSuccess] = useState("");
   
   const [income, setIncome] = useState("");
   const [bonusIncome, setBonusIncome] = useState("");
@@ -17,34 +21,105 @@ export default function App() {
   const [debt, setDebt] = useState("");
   const [result, setResult] = useState(null);
 
-  const handleLogin = (e) => {
+  const handleSignUp = (e) => {
     e.preventDefault();
-    setLoginError("");
+    setAuthError("");
+    setAuthSuccess("");
     
-    if (!email || !password) {
-      setLoginError("Please fill in all fields");
+    if (!fullName || !email || !password || !confirmPassword) {
+      setAuthError("Please fill in all fields");
       return;
     }
     
     if (!email.includes("@")) {
-      setLoginError("Please enter a valid email");
+      setAuthError("Please enter a valid email");
       return;
     }
     
     if (password.length < 6) {
-      setLoginError("Password must be at least 6 characters");
+      setAuthError("Password must be at least 6 characters");
       return;
     }
     
-    // Simulate login (in production, this would call a backend API)
-    localStorage.setItem("user", JSON.stringify({ email, loginTime: new Date() }));
+    if (password !== confirmPassword) {
+      setAuthError("Passwords do not match");
+      return;
+    }
+    
+    // Check if user already exists
+    const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
+    if (existingUsers.find(u => u.email === email)) {
+      setAuthError("An account with this email already exists");
+      return;
+    }
+    
+    // Create new account
+    const newUser = {
+      id: Date.now(),
+      fullName,
+      email,
+      password, // Note: In production, never store plain passwords - use bcrypt/hashing
+      createdAt: new Date().toISOString()
+    };
+    
+    existingUsers.push(newUser);
+    localStorage.setItem("users", JSON.stringify(existingUsers));
+    
+    setAuthSuccess("Account created successfully! Please log in.");
+    setFullName("");
+    setEmail("");
+    setPassword("");
+    setConfirmPassword("");
+    
+    setTimeout(() => {
+      setIsSignUp(false);
+      setAuthSuccess("");
+    }, 2000);
+  };
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    setAuthError("");
+    setAuthSuccess("");
+    
+    if (!email || !password) {
+      setAuthError("Please fill in all fields");
+      return;
+    }
+    
+    if (!email.includes("@")) {
+      setAuthError("Please enter a valid email");
+      return;
+    }
+    
+    if (password.length < 6) {
+      setAuthError("Password must be at least 6 characters");
+      return;
+    }
+    
+    // Check credentials against stored users
+    const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
+    const user = existingUsers.find(u => u.email === email && u.password === password);
+    
+    if (!user) {
+      setAuthError("Invalid email or password");
+      return;
+    }
+    
+    // Successful login
+    localStorage.setItem("currentUser", JSON.stringify({ 
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email, 
+      loginTime: new Date() 
+    }));
     setIsLoggedIn(true);
     setEmail("");
     setPassword("");
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("user");
+    localStorage.removeItem("currentUser");
     setIsLoggedIn(false);
     setResult(null);
     // Reset all inputs
@@ -136,45 +211,143 @@ export default function App() {
           <h1 style={styles.loginLogo}>CareerCash</h1>
           <p style={styles.loginSubtitle}>Financial readiness for your career</p>
           
-          <form onSubmit={handleLogin} style={styles.loginForm}>
-            <div style={styles.formGroup}>
-              <label style={styles.loginLabel}>Email Address</label>
-              <input
-                style={styles.loginInput}
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
+          {isSignUp ? (
+            // Sign Up Form
+            <form onSubmit={handleSignUp} style={styles.loginForm}>
+              <div style={styles.formGroup}>
+                <label style={styles.loginLabel}>Full Name</label>
+                <input
+                  style={styles.loginInput}
+                  type="text"
+                  placeholder="John Doe"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                />
+              </div>
 
-            <div style={styles.formGroup}>
-              <label style={styles.loginLabel}>Password</label>
-              <input
-                style={styles.loginInput}
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
+              <div style={styles.formGroup}>
+                <label style={styles.loginLabel}>Email Address</label>
+                <input
+                  style={styles.loginInput}
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
 
-            {loginError && (
-              <div style={styles.errorMessage}>{loginError}</div>
-            )}
+              <div style={styles.formGroup}>
+                <label style={styles.loginLabel}>Password</label>
+                <input
+                  style={styles.loginInput}
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
 
-            <button style={styles.loginButton} type="submit">
-              Sign In
-            </button>
-          </form>
+              <div style={styles.formGroup}>
+                <label style={styles.loginLabel}>Confirm Password</label>
+                <input
+                  style={styles.loginInput}
+                  type="password"
+                  placeholder="Confirm your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </div>
+
+              {authError && (
+                <div style={styles.errorMessage}>{authError}</div>
+              )}
+
+              {authSuccess && (
+                <div style={styles.successMessage}>{authSuccess}</div>
+              )}
+
+              <button style={styles.loginButton} type="submit">
+                Create Account
+              </button>
+
+              <button
+                style={styles.toggleButton}
+                type="button"
+                onClick={() => {
+                  setIsSignUp(false);
+                  setAuthError("");
+                  setAuthSuccess("");
+                  setFullName("");
+                  setEmail("");
+                  setPassword("");
+                  setConfirmPassword("");
+                }}
+              >
+                Already have an account? Sign In
+              </button>
+            </form>
+          ) : (
+            // Sign In Form
+            <form onSubmit={handleLogin} style={styles.loginForm}>
+              <div style={styles.formGroup}>
+                <label style={styles.loginLabel}>Email Address</label>
+                <input
+                  style={styles.loginInput}
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.loginLabel}>Password</label>
+                <input
+                  style={styles.loginInput}
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+
+              {authError && (
+                <div style={styles.errorMessage}>{authError}</div>
+              )}
+
+              {authSuccess && (
+                <div style={styles.successMessage}>{authSuccess}</div>
+              )}
+
+              <button style={styles.loginButton} type="submit">
+                Sign In
+              </button>
+
+              <button
+                style={styles.toggleButton}
+                type="button"
+                onClick={() => {
+                  setIsSignUp(true);
+                  setAuthError("");
+                  setAuthSuccess("");
+                  setEmail("");
+                  setPassword("");
+                }}
+              >
+                Don't have an account? Create one
+              </button>
+            </form>
+          )}
 
           <p style={styles.loginFooter}>
-            Demo: Use any email and password (min 6 chars)
+            {isSignUp ? "Sign up to get started" : "Sign in to your account"}
           </p>
         </div>
       </div>
     );
   }
+
+  const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
 
   return (
     <div style={styles.app}>
@@ -186,12 +359,11 @@ export default function App() {
         </p>
 
         <div style={styles.sidebarCard}>
-          <h3 style={styles.sidebarCardTitle}>About CareerCash</h3>
+          <h3 style={styles.sidebarCardTitle}>Welcome</h3>
 
           <p style={styles.sidebarCardText}>
-            CareerCash helps people understand whether their income, expenses, 
-            and savings support their career goals through a comprehensive 
-            financial readiness analysis.
+            Hello, <strong>{currentUser.fullName}</strong>! CareerCash helps you understand whether your income, expenses, 
+            and savings support your career goals.
           </p>
         </div>
 
@@ -486,7 +658,7 @@ const styles = {
     border: "2px solid #F6E2C3",
     padding: "40px",
     width: "100%",
-    maxWidth: "380px",
+    maxWidth: "400px",
     boxShadow: "0 10px 40px rgba(107, 45, 58, 0.1)",
   },
 
@@ -513,7 +685,7 @@ const styles = {
   },
 
   formGroup: {
-    marginBottom: "20px",
+    marginBottom: "18px",
     display: "flex",
     flexDirection: "column",
   },
@@ -552,11 +724,37 @@ const styles = {
     transition: "background 0.2s ease, transform 0.1s ease",
   },
 
+  toggleButton: {
+    padding: "10px 16px",
+    borderRadius: "8px",
+    border: "2px solid #F7D7DD",
+    background: "transparent",
+    color: "#B03052",
+    fontWeight: "600",
+    letterSpacing: "0.2px",
+    cursor: "pointer",
+    fontSize: "12px",
+    fontFamily: "'Inter', sans-serif",
+    marginTop: "12px",
+    transition: "background 0.2s ease, color 0.2s ease",
+  },
+
   errorMessage: {
     background: "#FFE5E5",
     border: "2px solid #F7D7DD",
     borderRadius: "8px",
     color: "#B03052",
+    padding: "10px 12px",
+    fontSize: "12px",
+    marginBottom: "12px",
+    fontWeight: "500",
+  },
+
+  successMessage: {
+    background: "#E5F7E5",
+    border: "2px solid #C3E6C3",
+    borderRadius: "8px",
+    color: "#2D7A2D",
     padding: "10px 12px",
     fontSize: "12px",
     marginBottom: "12px",
