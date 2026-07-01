@@ -1,6 +1,11 @@
 import { useState } from "react";
 
 export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  
   const [income, setIncome] = useState("");
   const [bonusIncome, setBonusIncome] = useState("");
   const [housingExpenses, setHousingExpenses] = useState("");
@@ -11,6 +16,48 @@ export default function App() {
   const [savings, setSavings] = useState("");
   const [debt, setDebt] = useState("");
   const [result, setResult] = useState(null);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    setLoginError("");
+    
+    if (!email || !password) {
+      setLoginError("Please fill in all fields");
+      return;
+    }
+    
+    if (!email.includes("@")) {
+      setLoginError("Please enter a valid email");
+      return;
+    }
+    
+    if (password.length < 6) {
+      setLoginError("Password must be at least 6 characters");
+      return;
+    }
+    
+    // Simulate login (in production, this would call a backend API)
+    localStorage.setItem("user", JSON.stringify({ email, loginTime: new Date() }));
+    setIsLoggedIn(true);
+    setEmail("");
+    setPassword("");
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    setIsLoggedIn(false);
+    setResult(null);
+    // Reset all inputs
+    setIncome("");
+    setBonusIncome("");
+    setHousingExpenses("");
+    setFoodExpenses("");
+    setTransportExpenses("");
+    setUtilities("");
+    setOtherExpenses("");
+    setSavings("");
+    setDebt("");
+  };
 
   const calculate = () => {
     const annualIncome = Number(income) || 0;
@@ -82,6 +129,53 @@ export default function App() {
     });
   };
 
+  if (!isLoggedIn) {
+    return (
+      <div style={styles.loginContainer}>
+        <div style={styles.loginBox}>
+          <h1 style={styles.loginLogo}>CareerCash</h1>
+          <p style={styles.loginSubtitle}>Financial readiness for your career</p>
+          
+          <form onSubmit={handleLogin} style={styles.loginForm}>
+            <div style={styles.formGroup}>
+              <label style={styles.loginLabel}>Email Address</label>
+              <input
+                style={styles.loginInput}
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.loginLabel}>Password</label>
+              <input
+                style={styles.loginInput}
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+
+            {loginError && (
+              <div style={styles.errorMessage}>{loginError}</div>
+            )}
+
+            <button style={styles.loginButton} type="submit">
+              Sign In
+            </button>
+          </form>
+
+          <p style={styles.loginFooter}>
+            Demo: Use any email and password (min 6 chars)
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={styles.app}>
       <div style={styles.sidebar}>
@@ -100,6 +194,10 @@ export default function App() {
             financial readiness analysis.
           </p>
         </div>
+
+        <button style={styles.logoutButton} onClick={handleLogout}>
+          Sign Out
+        </button>
       </div>
 
       <div style={styles.main}>
@@ -372,6 +470,108 @@ export default function App() {
 }
 
 const styles = {
+  // Login Styles
+  loginContainer: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: "100vh",
+    background: "linear-gradient(135deg, #F8F2EA 0%, #FFF7F7 100%)",
+    fontFamily: "'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', sans-serif",
+  },
+
+  loginBox: {
+    background: "#FFFDFB",
+    borderRadius: "16px",
+    border: "2px solid #F6E2C3",
+    padding: "40px",
+    width: "100%",
+    maxWidth: "380px",
+    boxShadow: "0 10px 40px rgba(107, 45, 58, 0.1)",
+  },
+
+  loginLogo: {
+    fontSize: "32px",
+    fontWeight: "700",
+    color: "#B03052",
+    margin: "0 0 8px 0",
+    textAlign: "center",
+    fontFamily: "'Inter', sans-serif",
+  },
+
+  loginSubtitle: {
+    fontSize: "14px",
+    color: "#8A6E6E",
+    textAlign: "center",
+    marginBottom: "28px",
+    fontWeight: "400",
+  },
+
+  loginForm: {
+    display: "flex",
+    flexDirection: "column",
+  },
+
+  formGroup: {
+    marginBottom: "20px",
+    display: "flex",
+    flexDirection: "column",
+  },
+
+  loginLabel: {
+    fontSize: "12px",
+    fontWeight: "600",
+    color: "#6B3A4A",
+    marginBottom: "6px",
+    textTransform: "uppercase",
+    letterSpacing: "0.2px",
+  },
+
+  loginInput: {
+    padding: "12px 14px",
+    borderRadius: "8px",
+    border: "2px solid #F7D7DD",
+    fontSize: "14px",
+    fontFamily: "'Inter', sans-serif",
+    transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+    boxSizing: "border-box",
+  },
+
+  loginButton: {
+    padding: "12px 24px",
+    borderRadius: "8px",
+    border: "none",
+    background: "#FFD54F",
+    color: "#5A3A00",
+    fontWeight: "600",
+    letterSpacing: "0.2px",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontFamily: "'Inter', sans-serif",
+    marginTop: "8px",
+    transition: "background 0.2s ease, transform 0.1s ease",
+  },
+
+  errorMessage: {
+    background: "#FFE5E5",
+    border: "2px solid #F7D7DD",
+    borderRadius: "8px",
+    color: "#B03052",
+    padding: "10px 12px",
+    fontSize: "12px",
+    marginBottom: "12px",
+    fontWeight: "500",
+  },
+
+  loginFooter: {
+    fontSize: "11px",
+    color: "#8A6E6E",
+    textAlign: "center",
+    marginTop: "20px",
+    fontWeight: "400",
+  },
+
+  // Dashboard Styles
   app: {
     display: "flex",
     minHeight: "100vh",
@@ -387,6 +587,8 @@ const styles = {
     padding: "24px 20px",
     borderRight: "2px solid #F7D7DD",
     overflowY: "auto",
+    display: "flex",
+    flexDirection: "column",
   },
 
   logo: {
@@ -412,6 +614,7 @@ const styles = {
     padding: "14px",
     borderRadius: "10px",
     border: "2px solid #F6E2C3",
+    marginBottom: "auto",
   },
 
   sidebarCardTitle: {
@@ -419,7 +622,6 @@ const styles = {
     fontWeight: "600",
     letterSpacing: "0.2px",
     color: "#8B3A52",
-    marginBottom: "8px",
     margin: "0 0 8px 0",
   },
 
@@ -430,6 +632,21 @@ const styles = {
     color: "#7A5B5B",
     lineHeight: "1.5",
     margin: 0,
+  },
+
+  logoutButton: {
+    marginTop: "20px",
+    padding: "10px 16px",
+    borderRadius: "8px",
+    border: "2px solid #F7D7DD",
+    background: "#FFF7F7",
+    color: "#B03052",
+    fontWeight: "600",
+    letterSpacing: "0.2px",
+    cursor: "pointer",
+    fontSize: "12px",
+    fontFamily: "'Inter', sans-serif",
+    transition: "background 0.2s ease, color 0.2s ease",
   },
 
   main: {
@@ -443,7 +660,6 @@ const styles = {
     fontWeight: "700",
     letterSpacing: "-0.8px",
     color: "#5A2A2A",
-    marginBottom: "6px",
     margin: "0 0 6px 0",
     fontFamily: "'Inter', sans-serif",
   },
@@ -470,7 +686,6 @@ const styles = {
     fontWeight: "600",
     letterSpacing: "-0.2px",
     color: "#5A2A2A",
-    marginBottom: "16px",
     margin: "0 0 16px 0",
     fontFamily: "'Inter', sans-serif",
   },
@@ -587,7 +802,6 @@ const styles = {
     fontWeight: "600",
     letterSpacing: "-0.2px",
     color: "#5A2A2A",
-    marginBottom: "12px",
     margin: "0 0 12px 0",
     fontFamily: "'Inter', sans-serif",
   },
