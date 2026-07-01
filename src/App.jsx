@@ -19,7 +19,10 @@ export default function App() {
   const [utilities, setUtilities] = useState("");
   const [otherExpenses, setOtherExpenses] = useState("");
   const [savings, setSavings] = useState("");
+  const [scholarships, setScholarships] = useState("");
+  const [gifts, setGifts] = useState("");
   const [debt, setDebt] = useState("");
+  const [tuitionCost, setTuitionCost] = useState("");
   const [result, setResult] = useState(null);
 
   const handleSignUp = (e) => {
@@ -133,7 +136,10 @@ export default function App() {
     setUtilities("");
     setOtherExpenses("");
     setSavings("");
+    setScholarships("");
+    setGifts("");
     setDebt("");
+    setTuitionCost("");
   };
 
   const calculate = () => {
@@ -145,9 +151,19 @@ export default function App() {
     const utilCost = Number(utilities) || 0;
     const other = Number(otherExpenses) || 0;
     const savingsAmount = Number(savings) || 0;
+    const scholarshipsAmount = Number(scholarships) || 0;
+    const giftsAmount = Number(gifts) || 0;
     const debtAmount = Number(debt) || 0;
+    const annualTuition = Number(tuitionCost) || 0;
 
-    const totalMonthlyExpenses = housing + food + transport + utilCost + other;
+    // Convert annual tuition to monthly
+    const monthlyTuition = annualTuition / 12;
+
+    // Calculate total educational resources (annual savings + scholarships + gifts should cover annual tuition)
+    const totalEducationalResources = savingsAmount + scholarshipsAmount + giftsAmount;
+    const educationalCoverage = totalEducationalResources >= annualTuition;
+
+    const totalMonthlyExpenses = housing + food + transport + utilCost + other + monthlyTuition;
     const monthlyIncome = (annualIncome + bonus) / 12;
     const moneyLeft = monthlyIncome - totalMonthlyExpenses;
     const debtToIncomeRatio = debtAmount > 0 ? (debtAmount / monthlyIncome) * 100 : 0;
@@ -159,14 +175,27 @@ export default function App() {
       const baseScore = Math.max(0, Math.min(100, 100 - expenseRatio));
       
       let adjustedScore = baseScore;
+      
+      // Penalty for high debt-to-income ratio
       if (debtToIncomeRatio > 50) {
         adjustedScore -= 20;
       } else if (debtToIncomeRatio > 30) {
         adjustedScore -= 10;
       }
 
+      // Penalty if educational costs are not covered
+      if (!educationalCoverage) {
+        adjustedScore -= 15;
+      }
+
+      // Bonus for adequate savings
       if (savingsAmount > 0 && savingsAmount >= monthlyIncome * 3) {
         adjustedScore += 10;
+      }
+
+      // Bonus for scholarships and gifts
+      if ((scholarshipsAmount + giftsAmount) > 0) {
+        adjustedScore += 5;
       }
 
       score = Math.round(Math.max(0, Math.min(100, adjustedScore)));
@@ -203,6 +232,10 @@ export default function App() {
       totalExpenses: totalMonthlyExpenses.toFixed(0),
       debtRatio: debtToIncomeRatio.toFixed(1),
       monthlyIncome: monthlyIncome.toFixed(0),
+      monthlyTuition: monthlyTuition.toFixed(0),
+      educationalResources: totalEducationalResources.toFixed(0),
+      annualTuition: annualTuition.toFixed(0),
+      educationalCoverage: educationalCoverage
     });
   };
 
@@ -503,6 +536,48 @@ export default function App() {
         </div>
 
         <div style={styles.card}>
+          <h2 style={styles.cardTitle}>Education Costs & Support</h2>
+
+          <div style={styles.inputRow}>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Annual Tuition Cost ($)</label>
+              <input
+                style={styles.input}
+                type="number"
+                min="0"
+                placeholder="e.g., 25000"
+                value={tuitionCost}
+                onChange={(e) => setTuitionCost(e.target.value)}
+              />
+            </div>
+
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Scholarships ($)</label>
+              <input
+                style={styles.input}
+                type="number"
+                min="0"
+                placeholder="e.g., 10000"
+                value={scholarships}
+                onChange={(e) => setScholarships(e.target.value)}
+              />
+            </div>
+
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Gifts/Grants ($)</label>
+              <input
+                style={styles.input}
+                type="number"
+                min="0"
+                placeholder="e.g., 5000"
+                value={gifts}
+                onChange={(e) => setGifts(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div style={styles.card}>
           <h2 style={styles.cardTitle}>Financial Health</h2>
 
           <div style={styles.inputRow}>
@@ -584,6 +659,16 @@ export default function App() {
 
               <div style={styles.metricCard}>
                 <div style={styles.metricTitle}>
+                  Monthly Tuition
+                </div>
+
+                <div style={styles.metricValue}>
+                  ${result.monthlyTuition}
+                </div>
+              </div>
+
+              <div style={styles.metricCard}>
+                <div style={styles.metricTitle}>
                   Money Left Over Each Month
                 </div>
 
@@ -611,6 +696,39 @@ export default function App() {
                   {result.duration}
                 </div>
               </div>
+
+              <div style={styles.metricCard}>
+                <div style={styles.metricTitle}>
+                  Education Coverage
+                </div>
+
+                <div style={{
+                  ...styles.metricValue,
+                  color: result.educationalCoverage ? "#2D7A2D" : "#B03052"
+                }}>
+                  {result.educationalCoverage ? "✓ Covered" : "✗ Shortfall"}
+                </div>
+              </div>
+
+              <div style={styles.metricCard}>
+                <div style={styles.metricTitle}>
+                  Annual Tuition
+                </div>
+
+                <div style={styles.metricValue}>
+                  ${result.annualTuition}
+                </div>
+              </div>
+
+              <div style={styles.metricCard}>
+                <div style={styles.metricTitle}>
+                  Educational Resources
+                </div>
+
+                <div style={styles.metricValue}>
+                  ${result.educationalResources}
+                </div>
+              </div>
             </div>
 
             <div style={styles.insightCard}>
@@ -623,6 +741,18 @@ export default function App() {
                 debt-to-income ratio of <strong>{result.debtRatio}%</strong>, you can 
                 expect your emergency fund to last <strong>{result.duration}</strong>.
               </p>
+
+              <p style={styles.insightText}>
+                {result.educationalCoverage ? (
+                  <>
+                    <strong style={{ color: "#2D7A2D" }}>✓ Educational costs are covered:</strong> Your annual tuition of <strong>${result.annualTuition}</strong> is fully supported by your savings, scholarships, and gifts totaling <strong>${result.educationalResources}</strong>.
+                  </>
+                ) : (
+                  <>
+                    <strong style={{ color: "#B03052" }}>✗ Educational costs shortfall:</strong> Your annual tuition of <strong>${result.annualTuition}</strong> exceeds your available education support (<strong>${result.educationalResources}</strong>) by <strong>${(result.annualTuition - result.educationalResources).toLocaleString()}</strong>.
+                  </>
+                )}
+              </p>
             </div>
 
             <div style={styles.footnoteCard}>
@@ -632,13 +762,13 @@ export default function App() {
 
               <p style={styles.footnoteText}>
                 The CareerCash Score (0–100) evaluates your financial readiness by analyzing 
-                your income, monthly expenses, savings, and debt levels.
+                your income, monthly expenses (including tuition), savings, scholarships, gifts, and debt levels.
               </p>
 
               <ul style={styles.list}>
                 <li>
                   <strong>Strong (75–100):</strong> Low debt, positive monthly cash flow, 
-                  emergency savings
+                  emergency savings, and educational costs covered
                 </li>
 
                 <li>
@@ -647,14 +777,15 @@ export default function App() {
                 </li>
 
                 <li>
-                  <strong>High Risk (Below 40):</strong> High debt-to-income ratio or 
-                  negative cash flow
+                  <strong>High Risk (Below 40):</strong> High debt-to-income ratio, 
+                  negative cash flow, or insufficient educational funding
                 </li>
               </ul>
 
               <p style={styles.footnoteText}>
                 A strong score indicates you can comfortably support career transitions. 
-                Improving your score means growing savings and reducing debt.
+                Improving your score means growing savings, reducing debt, and ensuring 
+                educational costs are adequately covered through scholarships, gifts, and savings.
               </p>
             </div>
           </>
@@ -1113,7 +1244,7 @@ const styles = {
     letterSpacing: "0.2px",
     lineHeight: "1.6",
     color: "#6B2D3A",
-    margin: 0,
+    margin: "0 0 12px 0",
   },
 
   footnoteCard: {
