@@ -2,31 +2,51 @@ import { useState } from "react";
 
 export default function App() {
   const [income, setIncome] = useState("");
-  const [expenses, setExpenses] = useState("");
+  const [bonusIncome, setBonusIncome] = useState("");
+  const [housingExpenses, setHousingExpenses] = useState("");
+  const [foodExpenses, setFoodExpenses] = useState("");
+  const [transportExpenses, setTransportExpenses] = useState("");
+  const [utilities, setUtilities] = useState("");
+  const [otherExpenses, setOtherExpenses] = useState("");
   const [savings, setSavings] = useState("");
+  const [debt, setDebt] = useState("");
   const [result, setResult] = useState(null);
 
   const calculate = () => {
     const annualIncome = Number(income) || 0;
-    const monthlyExpenses = Number(expenses) || 0;
+    const bonus = Number(bonusIncome) || 0;
+    const housing = Number(housingExpenses) || 0;
+    const food = Number(foodExpenses) || 0;
+    const transport = Number(transportExpenses) || 0;
+    const utilCost = Number(utilities) || 0;
+    const other = Number(otherExpenses) || 0;
     const savingsAmount = Number(savings) || 0;
+    const debtAmount = Number(debt) || 0;
 
-    const monthlyIncome = annualIncome / 12;
-    const moneyLeft = monthlyIncome - monthlyExpenses;
+    const totalMonthlyExpenses = housing + food + transport + utilCost + other;
+    const monthlyIncome = (annualIncome + bonus) / 12;
+    const moneyLeft = monthlyIncome - totalMonthlyExpenses;
+    const debtToIncomeRatio = debtAmount > 0 ? (debtAmount / monthlyIncome) * 100 : 0;
 
     let score = 50;
 
     if (monthlyIncome > 0) {
-      score = Math.round(
-        Math.max(
-          0,
-          Math.min(
-            100,
-            ((moneyLeft / monthlyIncome) * 50) + 50
-          )
-        )
-      );
-    } else if (monthlyExpenses === 0) {
+      const expenseRatio = (totalMonthlyExpenses / monthlyIncome) * 100;
+      const baseScore = Math.max(0, Math.min(100, 100 - expenseRatio));
+      
+      let adjustedScore = baseScore;
+      if (debtToIncomeRatio > 50) {
+        adjustedScore -= 20;
+      } else if (debtToIncomeRatio > 30) {
+        adjustedScore -= 10;
+      }
+
+      if (savingsAmount > 0 && savingsAmount >= monthlyIncome * 3) {
+        adjustedScore += 10;
+      }
+
+      score = Math.round(Math.max(0, Math.min(100, adjustedScore)));
+    } else if (totalMonthlyExpenses === 0) {
       score = 100;
     } else if (savingsAmount > 0) {
       score = 25;
@@ -35,7 +55,6 @@ export default function App() {
     }
 
     let rating = "Moderate Risk";
-
     if (score >= 75) {
       rating = "Strong";
     } else if (score < 40) {
@@ -43,13 +62,11 @@ export default function App() {
     }
 
     let duration;
-
-    if (monthlyExpenses === 0) {
+    if (totalMonthlyExpenses === 0) {
       duration = "Unlimited";
     } else if (moneyLeft < 0) {
-      duration = `${Math.floor(
-        savingsAmount / Math.abs(moneyLeft)
-      )} month(s)`;
+      const monthsOfCoverage = Math.floor(savingsAmount / Math.abs(moneyLeft));
+      duration = monthsOfCoverage > 0 ? `${monthsOfCoverage} month(s)` : "< 1 month";
     } else {
       duration = "Unlimited";
     }
@@ -59,6 +76,9 @@ export default function App() {
       moneyLeft: moneyLeft.toFixed(0),
       rating,
       duration,
+      totalExpenses: totalMonthlyExpenses.toFixed(0),
+      debtRatio: debtToIncomeRatio.toFixed(1),
+      monthlyIncome: monthlyIncome.toFixed(0),
     });
   };
 
@@ -72,12 +92,12 @@ export default function App() {
         </p>
 
         <div style={styles.sidebarCard}>
-          <h3>About CareerCash</h3>
+          <h3 style={styles.sidebarCardTitle}>About CareerCash</h3>
 
-          <p>
-            CareerCash helps people understand whether
-            their income, expenses, and savings support
-            their career goals.
+          <p style={styles.sidebarCardText}>
+            CareerCash helps people understand whether their income, expenses, 
+            and savings support their career goals through a comprehensive 
+            financial readiness analysis.
           </p>
         </div>
       </div>
@@ -88,49 +108,143 @@ export default function App() {
         </h1>
 
         <p style={styles.subtitle}>
-          Understand your financial readiness before
-          committing to a career path.
+          Understand your financial readiness before committing to a career path.
         </p>
 
         <div style={styles.card}>
-          <h2>Input Parameters</h2>
+          <h2 style={styles.cardTitle}>Income</h2>
 
           <div style={styles.inputRow}>
-            <input
-              style={styles.input}
-              type="number"
-              min="0"
-              placeholder="Annual Income ($)"
-              value={income}
-              onChange={(e) => setIncome(e.target.value)}
-            />
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Annual Income ($)</label>
+              <input
+                style={styles.input}
+                type="number"
+                min="0"
+                placeholder="e.g., 75000"
+                value={income}
+                onChange={(e) => setIncome(e.target.value)}
+              />
+            </div>
 
-            <input
-              style={styles.input}
-              type="number"
-              min="0"
-              placeholder="Expenses Per Month ($)"
-              value={expenses}
-              onChange={(e) => setExpenses(e.target.value)}
-            />
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Bonus/Other Income ($)</label>
+              <input
+                style={styles.input}
+                type="number"
+                min="0"
+                placeholder="e.g., 5000"
+                value={bonusIncome}
+                onChange={(e) => setBonusIncome(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
 
-            <input
-              style={styles.input}
-              type="number"
-              min="0"
-              placeholder="Savings ($)"
-              value={savings}
-              onChange={(e) => setSavings(e.target.value)}
-            />
+        <div style={styles.card}>
+          <h2 style={styles.cardTitle}>Monthly Expenses</h2>
+
+          <div style={styles.inputRow}>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Housing/Rent ($)</label>
+              <input
+                style={styles.input}
+                type="number"
+                min="0"
+                placeholder="e.g., 1500"
+                value={housingExpenses}
+                onChange={(e) => setHousingExpenses(e.target.value)}
+              />
+            </div>
+
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Food/Groceries ($)</label>
+              <input
+                style={styles.input}
+                type="number"
+                min="0"
+                placeholder="e.g., 400"
+                value={foodExpenses}
+                onChange={(e) => setFoodExpenses(e.target.value)}
+              />
+            </div>
+
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Transportation ($)</label>
+              <input
+                style={styles.input}
+                type="number"
+                min="0"
+                placeholder="e.g., 300"
+                value={transportExpenses}
+                onChange={(e) => setTransportExpenses(e.target.value)}
+              />
+            </div>
           </div>
 
-          <button
-            style={styles.button}
-            onClick={calculate}
-          >
-            Generate CareerCash Score
-          </button>
+          <div style={styles.inputRow}>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Utilities ($)</label>
+              <input
+                style={styles.input}
+                type="number"
+                min="0"
+                placeholder="e.g., 150"
+                value={utilities}
+                onChange={(e) => setUtilities(e.target.value)}
+              />
+            </div>
+
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Other Expenses ($)</label>
+              <input
+                style={styles.input}
+                type="number"
+                min="0"
+                placeholder="e.g., 300"
+                value={otherExpenses}
+                onChange={(e) => setOtherExpenses(e.target.value)}
+              />
+            </div>
+          </div>
         </div>
+
+        <div style={styles.card}>
+          <h2 style={styles.cardTitle}>Financial Health</h2>
+
+          <div style={styles.inputRow}>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Total Savings ($)</label>
+              <input
+                style={styles.input}
+                type="number"
+                min="0"
+                placeholder="e.g., 15000"
+                value={savings}
+                onChange={(e) => setSavings(e.target.value)}
+              />
+            </div>
+
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Total Debt ($)</label>
+              <input
+                style={styles.input}
+                type="number"
+                min="0"
+                placeholder="e.g., 8000"
+                value={debt}
+                onChange={(e) => setDebt(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        <button
+          style={styles.button}
+          onClick={calculate}
+        >
+          Generate CareerCash Score
+        </button>
 
         {result && (
           <>
@@ -147,16 +261,6 @@ export default function App() {
 
               <div style={styles.metricCard}>
                 <div style={styles.metricTitle}>
-                  Money Left Over Each Month
-                </div>
-
-                <div style={styles.metricValue}>
-                  ${result.moneyLeft}
-                </div>
-              </div>
-
-              <div style={styles.metricCard}>
-                <div style={styles.metricTitle}>
                   Affordability Rating
                 </div>
 
@@ -167,7 +271,47 @@ export default function App() {
 
               <div style={styles.metricCard}>
                 <div style={styles.metricTitle}>
-                  How Long Money Left Over Might Last
+                  Monthly Income
+                </div>
+
+                <div style={styles.metricValue}>
+                  ${result.monthlyIncome}
+                </div>
+              </div>
+
+              <div style={styles.metricCard}>
+                <div style={styles.metricTitle}>
+                  Total Monthly Expenses
+                </div>
+
+                <div style={styles.metricValue}>
+                  ${result.totalExpenses}
+                </div>
+              </div>
+
+              <div style={styles.metricCard}>
+                <div style={styles.metricTitle}>
+                  Money Left Over Each Month
+                </div>
+
+                <div style={styles.metricValue}>
+                  ${result.moneyLeft}
+                </div>
+              </div>
+
+              <div style={styles.metricCard}>
+                <div style={styles.metricTitle}>
+                  Debt-to-Income Ratio
+                </div>
+
+                <div style={styles.metricValue}>
+                  {result.debtRatio}%
+                </div>
+              </div>
+
+              <div style={styles.metricCard}>
+                <div style={styles.metricTitle}>
+                  Emergency Fund Duration
                 </div>
 
                 <div style={styles.metricValue}>
@@ -177,53 +321,47 @@ export default function App() {
             </div>
 
             <div style={styles.insightCard}>
-              <h2>CareerCash Insight</h2>
+              <h2 style={styles.cardTitle}>CareerCash Insight</h2>
 
-              <p>
-                Your CareerCash Score is{" "}
-                <strong>{result.score}/100</strong>.
-                Based on your income, expenses,
-                and savings, your affordability
-                rating is{" "}
-                <strong>{result.rating}</strong>.
+              <p style={styles.insightText}>
+                Your CareerCash Score is <strong>{result.score}/100</strong>, 
+                indicating a <strong>{result.rating}</strong> financial position. 
+                With a monthly surplus of <strong>${result.moneyLeft}</strong> and a 
+                debt-to-income ratio of <strong>{result.debtRatio}%</strong>, you can 
+                expect your emergency fund to last <strong>{result.duration}</strong>.
               </p>
             </div>
 
             <div style={styles.footnoteCard}>
-              <h3>
-                How Affordability Rating Is Calculated
+              <h3 style={styles.footnoteTitle}>
+                How Your Score Is Calculated
               </h3>
 
-              <p>
-                The CareerCash Score ranges from
-                0–100 and compares annual income,
-                monthly expenses, and available
-                savings.
+              <p style={styles.footnoteText}>
+                The CareerCash Score (0–100) evaluates your financial readiness by analyzing 
+                your income, monthly expenses, savings, and debt levels.
               </p>
 
-              <ul>
+              <ul style={styles.list}>
                 <li>
-                  <strong>Strong</strong>:
-                  Score 75–100
+                  <strong>Strong (75–100):</strong> Low debt, positive monthly cash flow, 
+                  emergency savings
                 </li>
 
                 <li>
-                  <strong>Moderate Risk</strong>:
-                  Score 40–74
+                  <strong>Moderate Risk (40–74):</strong> Manageable expenses, moderate debt, 
+                  building savings
                 </li>
 
                 <li>
-                  <strong>High Risk</strong>:
-                  Score below 40
+                  <strong>High Risk (Below 40):</strong> High debt-to-income ratio or 
+                  negative cash flow
                 </li>
               </ul>
 
-              <p>
-                Higher scores generally indicate
-                that income covers expenses more
-                comfortably. Savings can help
-                extend financial stability when
-                expenses exceed income.
+              <p style={styles.footnoteText}>
+                A strong score indicates you can comfortably support career transitions. 
+                Improving your score means growing savings and reducing debt.
               </p>
             </div>
           </>
@@ -238,125 +376,239 @@ const styles = {
     display: "flex",
     minHeight: "100vh",
     background: "#F8F2EA",
-    fontFamily: "Arial, sans-serif",
+    fontFamily: "'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', sans-serif",
     color: "#6B2D3A",
+    fontSize: "13px",
   },
 
   sidebar: {
-    width: "280px",
+    width: "240px",
     background: "#FFF7F7",
-    padding: "24px",
+    padding: "24px 20px",
     borderRight: "2px solid #F7D7DD",
+    overflowY: "auto",
   },
 
   logo: {
-    fontSize: "36px",
-    fontWeight: "bold",
+    fontSize: "28px",
+    fontWeight: "700",
+    letterSpacing: "-0.5px",
     color: "#B03052",
-    marginBottom: "12px",
+    margin: "0 0 6px 0",
+    fontFamily: "'Inter', sans-serif",
   },
 
   tagline: {
+    fontSize: "12px",
+    fontWeight: "500",
+    letterSpacing: "0.3px",
     color: "#7A5B5B",
-    marginBottom: "24px",
+    marginBottom: "20px",
+    lineHeight: "1.4",
   },
 
   sidebarCard: {
     background: "#FFFDFB",
-    padding: "18px",
-    borderRadius: "18px",
+    padding: "14px",
+    borderRadius: "10px",
     border: "2px solid #F6E2C3",
+  },
+
+  sidebarCardTitle: {
+    fontSize: "12px",
+    fontWeight: "600",
+    letterSpacing: "0.2px",
+    color: "#8B3A52",
+    marginBottom: "8px",
+    margin: "0 0 8px 0",
+  },
+
+  sidebarCardText: {
+    fontSize: "11px",
+    fontWeight: "400",
+    letterSpacing: "0.2px",
+    color: "#7A5B5B",
+    lineHeight: "1.5",
+    margin: 0,
   },
 
   main: {
     flex: 1,
-    padding: "32px",
+    padding: "32px 40px",
+    overflowY: "auto",
   },
 
   title: {
-    fontSize: "42px",
+    fontSize: "36px",
+    fontWeight: "700",
+    letterSpacing: "-0.8px",
     color: "#5A2A2A",
-    marginBottom: "8px",
+    marginBottom: "6px",
+    margin: "0 0 6px 0",
+    fontFamily: "'Inter', sans-serif",
   },
 
   subtitle: {
+    fontSize: "14px",
+    fontWeight: "400",
+    letterSpacing: "0.3px",
     color: "#8A6E6E",
     marginBottom: "24px",
+    lineHeight: "1.5",
   },
 
   card: {
     background: "#FFFDFB",
-    borderRadius: "24px",
-    padding: "24px",
+    borderRadius: "12px",
+    padding: "20px",
     border: "2px solid #F6E2C3",
-    marginBottom: "24px",
+    marginBottom: "20px",
+  },
+
+  cardTitle: {
+    fontSize: "16px",
+    fontWeight: "600",
+    letterSpacing: "-0.2px",
+    color: "#5A2A2A",
+    marginBottom: "16px",
+    margin: "0 0 16px 0",
+    fontFamily: "'Inter', sans-serif",
   },
 
   inputRow: {
     display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
     gap: "16px",
-    marginTop: "16px",
+    marginBottom: "12px",
+  },
+
+  inputGroup: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+  },
+
+  label: {
+    fontSize: "11px",
+    fontWeight: "600",
+    letterSpacing: "0.2px",
+    color: "#6B3A4A",
+    marginBottom: "6px",
+    textTransform: "uppercase",
   },
 
   input: {
-    padding: "16px",
-    borderRadius: "14px",
+    width: "100%",
+    padding: "10px 12px",
+    borderRadius: "8px",
     border: "2px solid #F7D7DD",
-    fontSize: "16px",
+    fontSize: "13px",
+    fontWeight: "400",
+    letterSpacing: "0.2px",
+    fontFamily: "'Inter', sans-serif",
+    boxSizing: "border-box",
+    transition: "border-color 0.2s ease, box-shadow 0.2s ease",
   },
 
   button: {
-    marginTop: "20px",
-    padding: "14px 24px",
-    borderRadius: "14px",
+    marginTop: "6px",
+    marginBottom: "28px",
+    padding: "12px 24px",
+    borderRadius: "8px",
     border: "none",
     background: "#FFD54F",
     color: "#5A3A00",
-    fontWeight: "bold",
+    fontWeight: "600",
+    letterSpacing: "0.2px",
     cursor: "pointer",
-    fontSize: "16px",
+    fontSize: "13px",
+    fontFamily: "'Inter', sans-serif",
+    transition: "background 0.2s ease, transform 0.1s ease",
   },
 
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(4, 1fr)",
-    gap: "18px",
+    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+    gap: "14px",
+    marginBottom: "28px",
   },
 
   metricCard: {
     background: "#FFFDFB",
-    borderRadius: "20px",
-    padding: "24px",
+    borderRadius: "12px",
+    padding: "18px",
     border: "2px solid #F6E2C3",
     textAlign: "center",
   },
 
   metricTitle: {
-    fontSize: "18px",
+    fontSize: "11px",
+    fontWeight: "600",
+    letterSpacing: "0.2px",
     color: "#A33A5E",
     marginBottom: "10px",
+    textTransform: "uppercase",
   },
 
   metricValue: {
-    fontSize: "28px",
-    fontWeight: "bold",
+    fontSize: "22px",
+    fontWeight: "700",
+    letterSpacing: "-0.4px",
     color: "#B03052",
+    fontFamily: "'Inter', sans-serif",
   },
 
   insightCard: {
-    marginTop: "24px",
+    marginBottom: "20px",
     background: "#FFF7F8",
-    borderRadius: "20px",
-    padding: "24px",
+    borderRadius: "12px",
+    padding: "20px",
     border: "2px solid #F7D7DD",
   },
 
+  insightText: {
+    fontSize: "13px",
+    fontWeight: "400",
+    letterSpacing: "0.2px",
+    lineHeight: "1.6",
+    color: "#6B2D3A",
+    margin: 0,
+  },
+
   footnoteCard: {
-    marginTop: "24px",
     background: "#FFFDFB",
-    borderRadius: "20px",
-    padding: "24px",
+    borderRadius: "12px",
+    padding: "20px",
     border: "2px solid #F6E2C3",
+  },
+
+  footnoteTitle: {
+    fontSize: "14px",
+    fontWeight: "600",
+    letterSpacing: "-0.2px",
+    color: "#5A2A2A",
+    marginBottom: "12px",
+    margin: "0 0 12px 0",
+    fontFamily: "'Inter', sans-serif",
+  },
+
+  footnoteText: {
+    fontSize: "12px",
+    fontWeight: "400",
+    letterSpacing: "0.2px",
+    lineHeight: "1.6",
+    color: "#6B2D3A",
+    marginBottom: "12px",
+  },
+
+  list: {
+    fontSize: "12px",
+    fontWeight: "400",
+    letterSpacing: "0.2px",
+    lineHeight: "1.6",
+    color: "#6B2D3A",
+    textAlign: "left",
+    margin: "12px 0",
+    paddingLeft: "20px",
   },
 };
