@@ -3,6 +3,7 @@ import { useState } from "react";
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -10,6 +11,14 @@ export default function App() {
   const [authError, setAuthError] = useState("");
   const [authSuccess, setAuthSuccess] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Forgot password states
+  const [resetEmail, setResetEmail] = useState("");
+  const [securityQuestion, setSecurityQuestion] = useState("");
+  const [securityAnswer, setSecurityAnswer] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [resetStep, setResetStep] = useState(1); // Step 1: Email, Step 2: Security Q, Step 3: New Password
   
   const [income, setIncome] = useState("");
   const [bonusIncome, setBonusIncome] = useState("");
@@ -120,6 +129,94 @@ export default function App() {
     setIsLoggedIn(true);
     setEmail("");
     setPassword("");
+  };
+
+  const handleForgotPasswordStep1 = (e) => {
+    e.preventDefault();
+    setAuthError("");
+    setAuthSuccess("");
+
+    if (!resetEmail) {
+      setAuthError("Please enter your email address");
+      return;
+    }
+
+    if (!resetEmail.includes("@")) {
+      setAuthError("Please enter a valid email");
+      return;
+    }
+
+    // Check if user exists
+    const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
+    const user = existingUsers.find(u => u.email === resetEmail);
+
+    if (!user) {
+      setAuthError("No account found with this email address");
+      return;
+    }
+
+    setResetStep(2);
+  };
+
+  const handleForgotPasswordStep2 = (e) => {
+    e.preventDefault();
+    setAuthError("");
+
+    if (!securityAnswer) {
+      setAuthError("Please answer the security question");
+      return;
+    }
+
+    // Verify security answer (simplified - in production, use proper validation)
+    const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
+    const user = existingUsers.find(u => u.email === resetEmail);
+
+    // For this demo, we'll accept any answer to proceed
+    // In production, you'd verify against stored answers
+    setResetStep(3);
+  };
+
+  const handleForgotPasswordStep3 = (e) => {
+    e.preventDefault();
+    setAuthError("");
+    setAuthSuccess("");
+
+    if (!newPassword || !confirmNewPassword) {
+      setAuthError("Please fill in both password fields");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setAuthError("Password must be at least 6 characters");
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setAuthError("Passwords do not match");
+      return;
+    }
+
+    // Update user password
+    const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
+    const userIndex = existingUsers.findIndex(u => u.email === resetEmail);
+
+    if (userIndex !== -1) {
+      existingUsers[userIndex].password = newPassword;
+      localStorage.setItem("users", JSON.stringify(existingUsers));
+
+      setAuthSuccess("Password reset successfully! Please log in with your new password.");
+      
+      setTimeout(() => {
+        setIsForgotPassword(false);
+        setResetStep(1);
+        setResetEmail("");
+        setSecurityQuestion("");
+        setSecurityAnswer("");
+        setNewPassword("");
+        setConfirmNewPassword("");
+        setAuthSuccess("");
+      }, 2000);
+    }
   };
 
   const handleLogout = () => {
@@ -246,7 +343,148 @@ export default function App() {
           <h1 style={styles.loginLogo}>CareerCash</h1>
           <p style={styles.loginSubtitle}>Financial readiness for your career</p>
           
-          {isSignUp ? (
+          {isForgotPassword ? (
+            // Forgot Password Form
+            <form style={styles.loginForm}>
+              {resetStep === 1 && (
+                <>
+                  <h3 style={styles.resetTitle}>Reset Your Password</h3>
+                  <p style={styles.resetSubtext}>Enter your email address to get started</p>
+                  
+                  <div style={styles.formGroup}>
+                    <label style={styles.loginLabel}>Email Address</label>
+                    <input
+                      style={styles.loginInput}
+                      type="email"
+                      placeholder="you@example.com"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                    />
+                  </div>
+
+                  {authError && (
+                    <div style={styles.errorMessage}>{authError}</div>
+                  )}
+
+                  <button 
+                    style={styles.loginButton} 
+                    type="button"
+                    onClick={handleForgotPasswordStep1}
+                  >
+                    Continue
+                  </button>
+                </>
+              )}
+
+              {resetStep === 2 && (
+                <>
+                  <h3 style={styles.resetTitle}>Verify Your Identity</h3>
+                  <p style={styles.resetSubtext}>Answer the security question below</p>
+                  
+                  <div style={styles.formGroup}>
+                    <label style={styles.loginLabel}>Security Question</label>
+                    <select
+                      style={styles.loginInput}
+                      value={securityQuestion}
+                      onChange={(e) => setSecurityQuestion(e.target.value)}
+                    >
+                      <option value="">Select a security question</option>
+                      <option value="pet">What was the name of your first pet?</option>
+                      <option value="city">What city were you born in?</option>
+                      <option value="school">What was your high school name?</option>
+                      <option value="book">What is your favorite book?</option>
+                    </select>
+                  </div>
+
+                  <div style={styles.formGroup}>
+                    <label style={styles.loginLabel}>Your Answer</label>
+                    <input
+                      style={styles.loginInput}
+                      type="text"
+                      placeholder="Enter your answer"
+                      value={securityAnswer}
+                      onChange={(e) => setSecurityAnswer(e.target.value)}
+                    />
+                  </div>
+
+                  {authError && (
+                    <div style={styles.errorMessage}>{authError}</div>
+                  )}
+
+                  <button 
+                    style={styles.loginButton} 
+                    type="button"
+                    onClick={handleForgotPasswordStep2}
+                  >
+                    Verify
+                  </button>
+                </>
+              )}
+
+              {resetStep === 3 && (
+                <>
+                  <h3 style={styles.resetTitle}>Create New Password</h3>
+                  <p style={styles.resetSubtext}>Enter your new password below</p>
+                  
+                  <div style={styles.formGroup}>
+                    <label style={styles.loginLabel}>New Password</label>
+                    <input
+                      style={styles.loginInput}
+                      type="password"
+                      placeholder="Enter new password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                    />
+                  </div>
+
+                  <div style={styles.formGroup}>
+                    <label style={styles.loginLabel}>Confirm Password</label>
+                    <input
+                      style={styles.loginInput}
+                      type="password"
+                      placeholder="Confirm new password"
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    />
+                  </div>
+
+                  {authError && (
+                    <div style={styles.errorMessage}>{authError}</div>
+                  )}
+
+                  {authSuccess && (
+                    <div style={styles.successMessage}>{authSuccess}</div>
+                  )}
+
+                  <button 
+                    style={styles.loginButton} 
+                    type="button"
+                    onClick={handleForgotPasswordStep3}
+                  >
+                    Reset Password
+                  </button>
+                </>
+              )}
+
+              <button
+                style={styles.toggleButton}
+                type="button"
+                onClick={() => {
+                  setIsForgotPassword(false);
+                  setResetStep(1);
+                  setResetEmail("");
+                  setSecurityQuestion("");
+                  setSecurityAnswer("");
+                  setNewPassword("");
+                  setConfirmNewPassword("");
+                  setAuthError("");
+                  setAuthSuccess("");
+                }}
+              >
+                Back to Sign In
+              </button>
+            </form>
+          ) : isSignUp ? (
             // Sign Up Form
             <form onSubmit={handleSignUp} style={styles.loginForm}>
               <div style={styles.formGroup}>
@@ -362,6 +600,18 @@ export default function App() {
                 style={styles.toggleButton}
                 type="button"
                 onClick={() => {
+                  setIsForgotPassword(true);
+                  setAuthError("");
+                  setAuthSuccess("");
+                }}
+              >
+                Forgot Password?
+              </button>
+
+              <button
+                style={styles.toggleButton}
+                type="button"
+                onClick={() => {
                   setIsSignUp(true);
                   setAuthError("");
                   setAuthSuccess("");
@@ -375,7 +625,7 @@ export default function App() {
           )}
 
           <p style={styles.loginFooter}>
-            {isSignUp ? "Sign up to get started" : "Sign in to your account"}
+            {isForgotPassword ? "Reset your password" : isSignUp ? "Sign up to get started" : "Sign in to your account"}
           </p>
         </div>
       </div>
@@ -831,6 +1081,23 @@ const styles = {
     color: "#8A6E6E",
     textAlign: "center",
     marginBottom: "28px",
+    fontWeight: "400",
+  },
+
+  resetTitle: {
+    fontSize: "18px",
+    fontWeight: "700",
+    color: "#5A2A2A",
+    margin: "0 0 8px 0",
+    textAlign: "center",
+    fontFamily: "'Inter', sans-serif",
+  },
+
+  resetSubtext: {
+    fontSize: "12px",
+    color: "#8A6E6E",
+    textAlign: "center",
+    marginBottom: "20px",
     fontWeight: "400",
   },
 
