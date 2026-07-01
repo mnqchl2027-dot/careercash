@@ -9,6 +9,7 @@ export default function App() {
   const [fullName, setFullName] = useState("");
   const [authError, setAuthError] = useState("");
   const [authSuccess, setAuthSuccess] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const [income, setIncome] = useState("");
   const [bonusIncome, setBonusIncome] = useState("");
@@ -122,6 +123,7 @@ export default function App() {
     localStorage.removeItem("currentUser");
     setIsLoggedIn(false);
     setResult(null);
+    setSidebarOpen(false);
     // Reset all inputs
     setIncome("");
     setBonusIncome("");
@@ -351,7 +353,28 @@ export default function App() {
 
   return (
     <div style={styles.app}>
-      <div style={styles.sidebar}>
+      {/* Mobile Header */}
+      <div style={styles.mobileHeader}>
+        <button 
+          style={styles.menuButton} 
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+        >
+          ☰
+        </button>
+        <h1 style={styles.mobileHeaderLogo}>CareerCash</h1>
+        <div style={{ width: "40px" }}></div>
+      </div>
+
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div 
+          style={styles.sidebarOverlay}
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div style={{...styles.sidebar, ...(sidebarOpen ? styles.sidebarOpen : {})}}>
         <h1 style={styles.logo}>CareerCash</h1>
 
         <p style={styles.tagline}>
@@ -650,13 +673,14 @@ const styles = {
     minHeight: "100vh",
     background: "linear-gradient(135deg, #F8F2EA 0%, #FFF7F7 100%)",
     fontFamily: "'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', sans-serif",
+    padding: "16px",
   },
 
   loginBox: {
     background: "#FFFDFB",
     borderRadius: "16px",
     border: "2px solid #F6E2C3",
-    padding: "40px",
+    padding: "40px 24px",
     width: "100%",
     maxWidth: "400px",
     boxShadow: "0 10px 40px rgba(107, 45, 58, 0.1)",
@@ -779,6 +803,56 @@ const styles = {
     fontSize: "13px",
   },
 
+  mobileHeader: {
+    display: "none",
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: "56px",
+    background: "#FFF7F7",
+    borderBottom: "2px solid #F7D7DD",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "0 16px",
+    zIndex: 100,
+    "@media (maxWidth: 768px)": {
+      display: "flex",
+    },
+  },
+
+  menuButton: {
+    background: "none",
+    border: "none",
+    fontSize: "24px",
+    color: "#B03052",
+    cursor: "pointer",
+    padding: "8px",
+    fontWeight: "bold",
+  },
+
+  mobileHeaderLogo: {
+    fontSize: "20px",
+    fontWeight: "700",
+    color: "#B03052",
+    margin: 0,
+    fontFamily: "'Inter', sans-serif",
+  },
+
+  sidebarOverlay: {
+    display: "none",
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: "rgba(0, 0, 0, 0.5)",
+    zIndex: 90,
+    "@media (maxWidth: 768px)": {
+      display: "block",
+    },
+  },
+
   sidebar: {
     width: "240px",
     background: "#FFF7F7",
@@ -787,6 +861,22 @@ const styles = {
     overflowY: "auto",
     display: "flex",
     flexDirection: "column",
+    "@media (maxWidth: 768px)": {
+      position: "fixed",
+      left: 0,
+      top: 0,
+      height: "100vh",
+      zIndex: 95,
+      transform: "translateX(-100%)",
+      transition: "transform 0.3s ease",
+      boxShadow: "2px 0 10px rgba(0, 0, 0, 0.1)",
+    },
+  },
+
+  sidebarOpen: {
+    "@media (maxWidth: 768px)": {
+      transform: "translateX(0)",
+    },
   },
 
   logo: {
@@ -796,6 +886,10 @@ const styles = {
     color: "#B03052",
     margin: "0 0 6px 0",
     fontFamily: "'Inter', sans-serif",
+    "@media (maxWidth: 768px)": {
+      fontSize: "24px",
+      marginTop: "16px",
+    },
   },
 
   tagline: {
@@ -851,6 +945,9 @@ const styles = {
     flex: 1,
     padding: "32px 40px",
     overflowY: "auto",
+    "@media (maxWidth: 768px)": {
+      padding: "80px 16px 32px 16px",
+    },
   },
 
   title: {
@@ -860,6 +957,10 @@ const styles = {
     color: "#5A2A2A",
     margin: "0 0 6px 0",
     fontFamily: "'Inter', sans-serif",
+    "@media (maxWidth: 768px)": {
+      fontSize: "28px",
+      letterSpacing: "-0.5px",
+    },
   },
 
   subtitle: {
@@ -877,6 +978,9 @@ const styles = {
     padding: "20px",
     border: "2px solid #F6E2C3",
     marginBottom: "20px",
+    "@media (maxWidth: 768px)": {
+      padding: "16px",
+    },
   },
 
   cardTitle: {
@@ -886,6 +990,9 @@ const styles = {
     color: "#5A2A2A",
     margin: "0 0 16px 0",
     fontFamily: "'Inter', sans-serif",
+    "@media (maxWidth: 768px)": {
+      fontSize: "14px",
+    },
   },
 
   inputRow: {
@@ -893,6 +1000,10 @@ const styles = {
     gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
     gap: "16px",
     marginBottom: "12px",
+    "@media (maxWidth: 768px)": {
+      gridTemplateColumns: "1fr",
+      gap: "12px",
+    },
   },
 
   inputGroup: {
@@ -937,6 +1048,10 @@ const styles = {
     fontSize: "13px",
     fontFamily: "'Inter', sans-serif",
     transition: "background 0.2s ease, transform 0.1s ease",
+    width: "100%",
+    "@media (maxWidth: 768px)": {
+      marginBottom: "24px",
+    },
   },
 
   grid: {
@@ -944,6 +1059,10 @@ const styles = {
     gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
     gap: "14px",
     marginBottom: "28px",
+    "@media (maxWidth: 768px)": {
+      gridTemplateColumns: "1fr",
+      gap: "12px",
+    },
   },
 
   metricCard: {
@@ -952,6 +1071,9 @@ const styles = {
     padding: "18px",
     border: "2px solid #F6E2C3",
     textAlign: "center",
+    "@media (maxWidth: 768px)": {
+      padding: "14px",
+    },
   },
 
   metricTitle: {
@@ -969,6 +1091,9 @@ const styles = {
     letterSpacing: "-0.4px",
     color: "#B03052",
     fontFamily: "'Inter', sans-serif",
+    "@media (maxWidth: 768px)": {
+      fontSize: "18px",
+    },
   },
 
   insightCard: {
@@ -977,6 +1102,9 @@ const styles = {
     borderRadius: "12px",
     padding: "20px",
     border: "2px solid #F7D7DD",
+    "@media (maxWidth: 768px)": {
+      padding: "16px",
+    },
   },
 
   insightText: {
@@ -993,6 +1121,9 @@ const styles = {
     borderRadius: "12px",
     padding: "20px",
     border: "2px solid #F6E2C3",
+    "@media (maxWidth: 768px)": {
+      padding: "16px",
+    },
   },
 
   footnoteTitle: {
@@ -1002,6 +1133,9 @@ const styles = {
     color: "#5A2A2A",
     margin: "0 0 12px 0",
     fontFamily: "'Inter', sans-serif",
+    "@media (maxWidth: 768px)": {
+      fontSize: "12px",
+    },
   },
 
   footnoteText: {
@@ -1011,6 +1145,9 @@ const styles = {
     lineHeight: "1.6",
     color: "#6B2D3A",
     marginBottom: "12px",
+    "@media (maxWidth: 768px)": {
+      fontSize: "11px",
+    },
   },
 
   list: {
@@ -1022,5 +1159,9 @@ const styles = {
     textAlign: "left",
     margin: "12px 0",
     paddingLeft: "20px",
+    "@media (maxWidth: 768px)": {
+      fontSize: "11px",
+      paddingLeft: "16px",
+    },
   },
 };
